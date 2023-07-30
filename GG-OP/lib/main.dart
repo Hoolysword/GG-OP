@@ -127,15 +127,19 @@ class FavoritesPage extends StatelessWidget {
     var champions = appState.championIds;
 
     return Center(
-      child: Expanded(
-        child: ListView(
-          children: [
-            for (var id in champions)
-              ListTile(
-                title: Text(id.toString()),
-              )
-          ],
-        ),
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              children: [
+                for (var id in champions)
+                  ListTile(
+                    title: Text(id.toString()),
+                  )
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
