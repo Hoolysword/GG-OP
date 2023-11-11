@@ -4,7 +4,7 @@
             "outputFile": "com.example.test1.app-mergeDebugResources-9:/values-night-v8/values-night-v8.xml",
             "map": [
                 {
-                    "source": "C:\\Users\\bapti\\OneDrive\\Documents\\projets\\GG-OP\\android\\app\\src\\main\\res\\values-night\\styles.xml",
+                    "source": "C:\\Users\\bapti\\OneDrive\\Documents\\projets\\GG-OP\\GG-OP\\android\\app\\src\\main\\res\\values-night\\styles.xml",
                     "from": {
                         "startLines": "3,14",
                         "startColumns": "4,4",
