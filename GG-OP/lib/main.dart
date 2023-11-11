@@ -28,16 +28,10 @@ class MyApp extends StatelessWidget {
 }
 
 class MyAppState extends ChangeNotifier {
-  var current = WordPair.random();
-  void getNext() {
-    current = WordPair.random();
-    notifyListeners();
-  }
-
   List<int> championIds = [];
   Future<void> fetchChampions() async {
     String apiUrl =
-        'https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key=RGAPI-a9878271-f535-4342-b9c0-3eb713f8b583';
+        'https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key=RGAPI-63e1fa95-be94-4029-8036-486c498a9800';
 
     var response = await http.get(Uri.parse(apiUrl));
 
@@ -45,19 +39,10 @@ class MyAppState extends ChangeNotifier {
       Map<String, dynamic> jsonDataMap = jsonDecode(response.body);
       championIds = jsonDataMap['freeChampionIds'].cast<int>();
       notifyListeners();
+      print("reussi");
     } else {
       print('Failed to load champions: ${response.statusCode}');
     }
-  }
-
-  var favorites = <WordPair>[];
-  void toggleFavorite(wordPair) {
-    if (favorites.contains(wordPair)) {
-      favorites.remove(wordPair);
-    } else {
-      favorites.add(wordPair);
-    }
-    notifyListeners();
   }
 }
 
@@ -119,11 +104,21 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class FavoritesPage extends StatelessWidget {
+class FavoritesPage extends StatefulWidget {
+  @override
+  _FavoritesPageState createState() => _FavoritesPageState();
+}
+
+class _FavoritesPageState extends State<FavoritesPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<MyAppState>().fetchChampions();
+  }
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    appState.fetchChampions();
     var champions = appState.championIds;
 
     return Center(
@@ -149,41 +144,10 @@ class GeneratorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    var pair = appState.current;
-
-    IconData icon;
-    if (appState.favorites.contains(pair)) {
-      icon = Icons.favorite;
-    } else {
-      icon = Icons.favorite_border;
-    }
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          BigCard(pair: pair),
-          SizedBox(height: 10),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  appState.toggleFavorite(pair);
-                },
-                icon: Icon(icon),
-                label: Text('Like'),
-              ),
-              SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: () {
-                  appState.getNext();
-                },
-                child: Text('Next'),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
