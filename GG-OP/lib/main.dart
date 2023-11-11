@@ -29,6 +29,30 @@ class MyApp extends StatelessWidget {
 
 class MyAppState extends ChangeNotifier {
   List<int> championIds = [];
+  Map<String, dynamic> championData = {};
+  Future<void> fetchChampionData() async {
+    // Récupérer la liste des versions
+    var versionsResponse = await http.get(
+        Uri.parse('https://ddragon.leagueoflegends.com/api/versions.json'));
+    var versions = jsonDecode(versionsResponse.body) as List;
+    var latest = versions[0];
+
+    // Récupérer la liste des champions pour en_US pour la dernière version
+    var championDataResponse = await http.get(Uri.parse(
+        'https://ddragon.leagueoflegends.com/cdn/$latest/data/en_US/champion.json'));
+    championData = jsonDecode(championDataResponse.body)['data'];
+  }
+
+  String getChampionInfo(Map<String, dynamic> championData, int id) {
+    var list = championData.values.toList();
+    for (var champion in list) {
+      if (champion['key'] == id.toString()) {
+        return champion['name'];
+      }
+    }
+    return "";
+  }
+
   Future<void> fetchChampions() async {
     String apiUrl =
         'https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key=RGAPI-63e1fa95-be94-4029-8036-486c498a9800';
@@ -76,11 +100,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 destinations: [
                   NavigationRailDestination(
                     icon: Icon(Icons.home),
-                    label: Text('Home'),
+                    label: Text('Accueil'),
                   ),
                   NavigationRailDestination(
                     icon: Icon(Icons.favorite),
-                    label: Text('Favorites'),
+                    label: Text('Rotation des champions'),
                   ),
                 ],
                 selectedIndex: selectedIndex,
@@ -104,23 +128,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class FavoritesPage extends StatefulWidget {
-  @override
-  _FavoritesPageState createState() => _FavoritesPageState();
-}
-
-class _FavoritesPageState extends State<FavoritesPage> {
-  @override
-  void initState() {
-    super.initState();
-    context.read<MyAppState>().fetchChampions();
-  }
-
+class FavoritesPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var champions = appState.championIds;
-
+    var championData = appState.championData;
     return Center(
       child: Column(
         children: [
@@ -129,7 +142,7 @@ class _FavoritesPageState extends State<FavoritesPage> {
               children: [
                 for (var id in champions)
                   ListTile(
-                    title: Text(id.toString()),
+                    title: Text(appState.getChampionInfo(championData, id)),
                   )
               ],
             ),
@@ -144,35 +157,41 @@ class GeneratorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var pair = appState.current;
+
+    IconData icon;
+    if (appState.favorites.contains(pair)) {
+      icon = Icons.favorite;
+    } else {
+      icon = Icons.favorite_border;
+    }
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-      ),
-    );
-  }
-}
-
-class BigCard extends StatelessWidget {
-  const BigCard({
-    super.key,
-    required this.pair,
-  });
-
-  final WordPair pair;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final style = theme.textTheme.displayMedium!.copyWith(
-      color: theme.colorScheme.onPrimary,
-    );
-
-    return Card(
-      color: theme.colorScheme.primary,
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Text(pair.asLowerCase, style: style),
+        children: [
+          BigCard(pair: pair),
+          SizedBox(height: 10),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () {
+                  appState.toggleFavorite(pair);
+                },
+                icon: Icon(icon),
+                label: Text('Like'),
+              ),
+              SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: () {
+                  appState.getNext();
+                },
+                child: Text('Next'),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
