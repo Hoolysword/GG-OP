@@ -28,8 +28,62 @@ class MyApp extends StatelessWidget {
 }
 
 class MyAppState extends ChangeNotifier {
+  var key = 'RGAPI-d97037ca-d02a-47a8-8a8c-2607ad81cebe';
   List<int> championIds = [];
   Map<String, dynamic> championData = {};
+  Future<String> fetchPuuid(name) async {
+    var puuidResponse = await http.get(Uri.parse(
+        'https://euw1.api.riotgames.com/lol/summoner/v4/summoners/by-name/$name?api_key=$key'));
+    Map<String, dynamic> puuid = jsonDecode(puuidResponse.body);
+    return puuid['puuid'].toString();
+  }
+
+  Future<Map<String, dynamic>> fetchGame(String gameId) async {
+    try {
+      final response = await http.get(Uri.parse(
+          'https://europe.api.riotgames.com/lol/match/v5/matches/$gameId?api_key=$key'));
+
+      if (response.statusCode == 200) {
+        // Parse the JSON response into a Map<String, dynamic>
+        Map<String, dynamic> gameData = jsonDecode(response.body);
+        return gameData;
+      } else {
+        // Handle the case where the request fails with a status code other than 200
+        throw Exception(
+            'Failed to fetch game data. Status code: ${response.statusCode}');
+      }
+    } catch (error) {
+      // Handle any exceptions that occur during the HTTP request
+      throw Exception('Error during the request: $error');
+    }
+  }
+
+  Future<void> fetchGamesInParallel(gameIds) async {
+    var results = <Map<String, dynamic>>[];
+
+    // Créez une future pour chaque ID de jeu
+    for (String gameId in gameIds) {
+      try {
+        // Utilisez Future.wait pour attendre l'achèvement de toutes les futures en parallèle
+        Map<String, dynamic> result = await fetchGame(gameId);
+        results.add(result);
+      } catch (error) {
+        print(
+            'Une erreur s\'est produite lors de la récupération des jeux : $error');
+      }
+    }
+
+    print(results);
+  }
+
+  Future<List> fetchGames(puuid) async {
+    var GameResponse = await http.get(Uri.parse(
+        'https://europe.api.riotgames.com/lol/match/v5/matches/by-puuid/$puuid/ids?start=0&count=20&api_key=$key'));
+    var game = jsonDecode(GameResponse.body) as List;
+    print(game);
+    return game;
+  }
+
   Future<void> fetchChampionData() async {
     // Récupérer la liste des versions
     var versionsResponse = await http.get(
@@ -55,7 +109,7 @@ class MyAppState extends ChangeNotifier {
 
   Future<void> fetchChampions() async {
     String apiUrl =
-        'https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key=RGAPI-63e1fa95-be94-4029-8036-486c498a9800';
+        'https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key=RGAPI-d97037ca-d02a-47a8-8a8c-2607ad81cebe';
 
     var response = await http.get(Uri.parse(apiUrl));
 
@@ -164,22 +218,53 @@ class _FavoritesPageState extends State<FavoritesPage> {
   }
 }
 
-class GeneratorPage extends StatelessWidget {
+class GeneratorPage extends StatefulWidget {
+  @override
+  _GeneratorPageState createState() => _GeneratorPageState();
+}
+
+class _GeneratorPageState extends State<GeneratorPage> {
+  TextEditingController _textController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(height: 10),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(width: 10),
-            ],
+          TextField(
+            controller: _textController,
+            decoration: InputDecoration(
+              labelText: 'Entrez du texte',
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              String enteredText = _textController.text;
+              appState.fetchPuuid(enteredText).then((puuid) {
+                print(puuid);
+                appState.fetchGames(puuid).then((game) {
+                  print(game);
+                  appState.fetchGamesInParallel(game);
+                });
+              }).catchError((error) {
+                print(
+                    'Une erreur s\'est produite lors de la récupération du puuid : $error');
+              });
+            },
+            icon: Icon(Icons.search),
+            label: Text('Search'),
           ),
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _textController
+        .dispose(); // N'oubliez pas de libérer le contrôleur lorsqu'il n'est plus nécessaire.
+    super.dispose();
   }
 }
