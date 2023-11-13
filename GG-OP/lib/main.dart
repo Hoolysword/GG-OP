@@ -218,39 +218,33 @@ class _GeneratorPageState extends State<GeneratorPage> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    var pair = appState.current;
-
-    IconData icon;
-    if (appState.favorites.contains(pair)) {
-      icon = Icons.favorite;
-    } else {
-      icon = Icons.favorite_border;
-    }
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          BigCard(pair: pair),
-          SizedBox(height: 10),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ElevatedButton.icon(
-                onPressed: () {
-                  appState.toggleFavorite(pair);
-                },
-                icon: Icon(icon),
-                label: Text('Like'),
-              ),
-              SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: () {
-                  appState.getNext();
-                },
-                child: Text('Next'),
-              ),
-            ],
+          TextField(
+            controller: _textController,
+            decoration: InputDecoration(
+              labelText: 'Entrez du texte',
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              String enteredText = _textController.text;
+              appState.fetchPuuid(enteredText).then((puuid) {
+                print(puuid);
+                appState.fetchGames(puuid).then((game) {
+                  print(game);
+                  appState.fetchGamesInParallel(game);
+                });
+              }).catchError((error) {
+                print(
+                    'Une erreur s\'est produite lors de la récupération du puuid : $error');
+              });
+            },
+            icon: Icon(Icons.search),
+            label: Text('Search'),
           ),
         ],
       ),
