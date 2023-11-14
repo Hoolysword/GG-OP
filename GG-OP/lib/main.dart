@@ -28,7 +28,7 @@ class MyApp extends StatelessWidget {
 }
 
 class MyAppState extends ChangeNotifier {
-  var key = 'RGAPI-d97037ca-d02a-47a8-8a8c-2607ad81cebe';
+  var key = 'RGAPI-1acaa51c-c50d-42ca-8478-dabd1e7e7f96';
   List<int> championIds = [];
   Map<String, dynamic> championData = {};
   Future<String> fetchPuuid(name) async {
@@ -95,6 +95,7 @@ class MyAppState extends ChangeNotifier {
     var championDataResponse = await http.get(Uri.parse(
         'https://ddragon.leagueoflegends.com/cdn/$latest/data/en_US/champion.json'));
     championData = jsonDecode(championDataResponse.body)['data'];
+    print(championData);
   }
 
   String getChampionInfo(Map<String, dynamic> championData, int id) {
@@ -108,8 +109,9 @@ class MyAppState extends ChangeNotifier {
   }
 
   Future<void> fetchChampions() async {
+    print('fetch');
     String apiUrl =
-        'https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key=RGAPI-d97037ca-d02a-47a8-8a8c-2607ad81cebe';
+        'https://euw1.api.riotgames.com/lol/platform/v3/champion-rotations?api_key=$key';
 
     var response = await http.get(Uri.parse(apiUrl));
 
@@ -182,7 +184,19 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-class FavoritesPage extends StatelessWidget {
+class FavoritesPage extends StatefulWidget {
+  @override
+  _FavoritesPageState createState() => _FavoritesPageState();
+}
+
+class _FavoritesPageState extends State<FavoritesPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<MyAppState>().fetchChampions();
+    context.read<MyAppState>().fetchChampionData();
+  }
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
